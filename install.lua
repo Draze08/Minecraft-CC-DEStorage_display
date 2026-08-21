@@ -2,6 +2,7 @@
 -- Selects and installs either the core telemetry relay or foyer display.
 
 local BASE = "https://raw.githubusercontent.com/Draze08/Minecraft-CC-DEStorage_display/main/"
+local CONFIG_FILE = ".destorage_display.cfg"
 
 local function banner()
   term.clear()
@@ -15,7 +16,7 @@ local function banner()
   print("     DE pylon -> wired modem -> this PC -> wireless")
   print()
   print("  2. Display")
-  print("     wireless -> this PC -> Advanced Monitor")
+  print("     wireless -> this PC -> wired network -> Advanced Monitor")
   print()
 end
 
@@ -25,6 +26,13 @@ local function download(url, path)
   if not ok or not fs.exists(path) then
     error("Failed to download " .. path .. (err and (": "..tostring(err)) or ""), 0)
   end
+end
+
+local function saveDisplayConfig(name)
+  local h = fs.open(CONFIG_FILE, "w")
+  if not h then error("Could not create " .. CONFIG_FILE, 0) end
+  h.write(textutils.serialize({ displayName = name }))
+  h.close()
 end
 
 banner()
@@ -45,6 +53,19 @@ print()
 print("Installing " .. role .. "...")
 download(BASE .. source, "destorage.lua")
 
+-- Display configuration happens HERE, before startup, monitor discovery,
+-- modem discovery, telemetry, colours, rendering, or any other cleverness.
+if choice == "2" then
+  print()
+  print("Display configuration")
+  print("---------------------")
+  write("System / display name: ")
+  local name = read()
+  if name == "" then name = "ENERGY CORE" end
+  saveDisplayConfig(name)
+  print("Saved display name: " .. name)
+end
+
 local startup = [[-- DE Storage Display auto-start
 shell.run("destorage.lua")
 ]]
@@ -52,10 +73,12 @@ local h = fs.open("startup.lua", "w")
 h.write(startup)
 h.close()
 
+print()
 print("Installed: " .. source .. " -> destorage.lua")
 print("Created:   startup.lua")
+if choice == "2" then print("Created:   " .. CONFIG_FILE) end
+print("Role:      " .. role)
 print()
-print("Role: " .. role)
 print("Rebooting in 2 seconds...")
 sleep(2)
 os.reboot()

@@ -22,10 +22,18 @@ local function findWirelessModem()
 end
 
 local function findCore()
-  local core, name = peripheral.find("draconic_rf_storage", function(n, _)
-    return true
-  end)
-  return name, core
+  -- peripheral.find returns the wrapped peripheral, not its network name.
+  local core = peripheral.find("draconic_rf_storage")
+  if not core then return nil, nil end
+
+  -- Resolve a friendly peripheral name separately for status output.
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "draconic_rf_storage" then
+      return name, core
+    end
+  end
+
+  return "draconic_rf_storage", core
 end
 
 term.clear()
